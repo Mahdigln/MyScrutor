@@ -1,4 +1,6 @@
 using FluentValidation.AspNetCore;
+using MyScrutor.Models;
+using MyScrutor.Services.Generic;
 using MyScrutor.Services.Simple;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,10 +13,24 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-//IOC
+#region Simple Decoration
 builder.Services.AddTransient<IBookRepository, BookRepository>();
 builder.Services.Decorate<IBookRepository, BookRepositoryValidator>();
+#endregion
 
+#region Genereic Decoration
+builder.Services.Scan(scan=>scan.FromAssembliesOf(typeof(IRepository<>))
+.AddClasses(classes=>classes.AssignableTo(typeof(IRepository<>)).Where(_=>!_.IsGenericType))
+.AsImplementedInterfaces()
+.WithTransientLifetime()
+);
+builder.Services.Decorate(typeof(IRepository<>), typeof(GenericRipositoryValidator<>));
+
+
+//builder.Services.AddTransient<IRepository<Book>, GenericBookRepository>();
+//builder.Services.Decorate<IRepository<Book>, GenericRipositoryValidator<Book>>();
+
+#endregion
 
 var app = builder.Build();
 
